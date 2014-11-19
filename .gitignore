@@ -4,3 +4,4 @@ lib/
 .Python
 dist/
 Alarmer.egg-info/
+*.pyc
