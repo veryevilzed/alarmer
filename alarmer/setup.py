@@ -11,12 +11,14 @@ setup(  name='Alarmer',
         author_email='dmitry.vysochin@gmail.com',
         url='https://github.com/veryevilzed/alarmer',
         packages=['alarmer', 'alarmer.plugins'],
-        package_dir={'alarmer': 'src/alarmer', 'alarmer.plugins': 'src/alarmer/plugins'},
+        package_dir={'alarmer': 'src/alarmer', 'alarmer.informers': 'src/alarmer/infromers'},
         #package_data={'alarmer': ['data/*.dat']},
         install_requires=(
                 'configparser',
                 'requests',
                 'python-simple-hipchat',
+                'plumbum',
+                'psutil'
             ),
         entry_points = {
             'console_scripts': ['alarmer=alarmer.alarm:main', ],

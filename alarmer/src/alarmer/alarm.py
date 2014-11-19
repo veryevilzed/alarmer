@@ -66,6 +66,8 @@ class Alarmer:
                         self.error_message = config[section][key]
             if section == "HIPCHAT":
                 self.informers += [plugins.hipster.Hipster(config[section])]
+            if section == "EMAIL":
+                self.informers += [plugins.hipster.Hipster(config[section])]
 
         self.run()
 
