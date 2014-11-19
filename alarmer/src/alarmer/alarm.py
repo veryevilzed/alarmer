@@ -9,64 +9,18 @@ import time
 import re
 import datetime
 
-__all__ = ['Checker', 'Informer', 'Main']
+from checkers.sysinfo import Ram, CPU, Disk, Ping 
+from informers.console import Console
+from informers.curl import Curl
+from informers.email import Email
+from informers.hipchat import HipChat
 
-
-class Informer(object):
-
-    def __init__(self, main, **kwargs):
-        self._options = main.options(kwargs)
-
-    def __enter__(self):
-        return self
-    
-    def __exit__(self, type, value, traceback):
-        pass
-
-    def alarm(self, **kwargs):
-        return True, None
-
-
-class Checker(object):
-    _informers = []
-
-    def __init__(self, main, **kwargs):
-        self._options = main.options(kwargs)
-        main._checkers.append(self)
-
-    def __setattr__(self, key, val):
-        if key.startswith('_') or hasattr(self, key):
-            return super(Checker, self).__setattr__(key, val)
-        if key == 'informers':
-            self._informers += val
-        else:
-            self._options[key] = val
-
-    def __getattr__(self, key):
-        if key.startswith('_') or hasattr(self, key):
-            return super(Checker, self).__getattr__(key)
-        if key == 'informers':
-            self._informers[key]
-        else:
-            self._options[key]
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        pass
-
-    def update(self):
-        raise NotImplemented("")
-
-    def check(self):
-        value = self. self.get()
-        return True, None
+__all__ = ['Main']
 
 
 class Main(object):
     _checkers = []
-    _default_plugins = [Checker, Informer]
+    _default_plugins = [Ram, CPU, Disk, Ping, Console, Curl, Email, HipChat]
     _options = {
         "name": "Alarm",
         "message": "[$datetime] Alarm $name",
@@ -77,14 +31,14 @@ class Main(object):
         self._options.update(kwargs)
         self.inject(self._options.get("plugins", []))
 
-    def _plugin(self, plugin):
-        def __plugin(self, **kwargs):
+    def plugin(self, plugin):
+        def _plugin(self, **kwargs):
             return plugin(self, **kwargs)
-        return types.MethodType(__plugin, self)
+        return types.MethodType(_plugin, self)
 
     def inject(self, plugins):
         for plugin in plugins + self._default_plugins:
-            setattr(self, plugin.__name__, self._plugin(plugin))
+            setattr(self, plugin.__name__, self.plugin(plugin))
 
 
     def run(self):
@@ -93,8 +47,8 @@ class Main(object):
                 res, value = checker.check()
 
                 if not res:
-                    for informer in checker._informers:
-                        informer.alarm(value=value)
+                    for informer in checker._options.get("informers", []):
+                        informer.alarm(value=value, checker=checker)
 
             time.sleep(self._options["sleep"])
 

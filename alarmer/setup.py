@@ -14,7 +14,6 @@ setup(  name='Alarmer',
         package_dir={'alarmer': 'src/alarmer', 'alarmer.informers': 'src/alarmer/infromers'},
         #package_data={'alarmer': ['data/*.dat']},
         install_requires=(
-                'configparser',
                 'requests',
                 'python-simple-hipchat',
                 'plumbum',

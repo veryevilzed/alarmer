@@ -1,17 +1,16 @@
+import sys
+sys.path.append("./alarmer")
+
 from alarmer import Main
 
 main = Main(name="RAM")
 
-email = main.Informer(
-    message = "Hello!"
-)
-
-informers = [email]
-
-
+informers = [
+    main.Console(message = "Fuck, mem is $value!", delay = 5)
+]
 
 main.Ram(
-    validate = lambda v: v < 70
+    validate = lambda x: x.value < 20,
     informers = informers
 )
 
