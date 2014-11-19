@@ -5,13 +5,13 @@
 from setuptools import setup
 
 setup(  name='Alarmer',
-        version='1.0.1',
+        version='1.0.2',
         description='Python Alarm Utilities',
         author='Dmitry Vysochin',
         author_email='dmitry.vysochin@gmail.com',
         url='https://github.com/veryevilzed/alarmer',
-        packages=['alarmer', ],
-        package_dir={'alarmer': 'src/alarmer'},
+        packages=['alarmer', 'alarmer.plugins'],
+        package_dir={'alarmer': 'src/alarmer', 'alarmer.plugins': 'src/alarmer/plugins'},
         #package_data={'alarmer': ['data/*.dat']},
         install_requires=(
                 'configparser',
