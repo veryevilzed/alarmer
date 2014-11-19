@@ -56,11 +56,11 @@ class Checker(object):
     def __exit__(self, type, value, traceback):
         pass
 
-    def get(self):
-        return 0
+    def update(self):
+        raise NotImplemented("")
 
     def check(self):
-        value = self.get()
+        value = self. self.get()
         return True, None
 
 
