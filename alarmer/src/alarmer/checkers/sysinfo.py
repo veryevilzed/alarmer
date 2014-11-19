@@ -2,11 +2,12 @@
 
 import psutils, os, re
 from plumbum import local
+from .alarm import Checker
 
 
-class Ram:
-    def __init__(self):
-        pass
+class Ram(Checker):
+    def __init__(self, main, **kwargs):
+        super(self.__class__, self).__init__(main, **kwargs)
 
     
 
@@ -18,18 +19,18 @@ class Ram:
         self.value = psutil.virtual_memory().percent
 
 
-class CPU:
-    def __init__(self):
-        pass
+class CPU(Checker):
+    def __init__(self, main, **kwargs):
+        super(self.__class__, self).__init__(main, **kwargs)
 
     def update(self):
         self.value = psutil.cpu_percent()
         return self.value
 
 
-class Disk:
-    def __init__(self):
-        pass
+class Disk(Checker):
+    def __init__(self, main, **kwargs):
+        super(self.__class__, self).__init__(main, **kwargs)
         
     def update(self):
         p = os.statvfs(self._options.get("target", "/") )
@@ -37,8 +38,9 @@ class Disk:
 
 
 
-class Ping:
-    def __init__(self):
+class Ping(Checker):
+    def __init__(self, main, **kwargs):
+        super(self.__class__, self).__init__(main, **kwargs)
         self.re = re.compile(r"(\d+\.\d+)% packet loss")
         self.ping = local['ping']['-c1']
 

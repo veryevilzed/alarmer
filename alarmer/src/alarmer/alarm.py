@@ -1,102 +1,106 @@
 #!/usr/bin/env python
 #coding:utf-8
 
+import types
 import sys
 import getopt
-import configparser
 import subprocess, shlex
 import time
 import re
-import hipchat
 import datetime
-import plugins.hipster
 
-class Alarmer:
+__all__ = ['Checker', 'Informer', 'Main']
 
-    def shell_check(self):
-        if not self.shell:
-            return None
-        try:
-            result = subprocess.check_output(self.shell)
-            if not self.re_pattern: 
-                return True, "OK"
-            if self.re_pattern.match(result) == None:
-                print "RePattern no match"
-                return False, result
-            return True
-        except OSError, ex:
-            print "Error", ex
-            return False, str(ex)
+
+class Informer(object):
+
+    def __init__(self, main, **kwargs):
+        self._options = main.options(kwargs)
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def alarm(self, **kwargs):
+        return True, None
+
+
+class Checker(object):
+    _informers = []
+
+    def __init__(self, main, **kwargs):
+        self._options = main.options(kwargs)
+        main._checkers.append(self)
+
+    def __setattr__(self, key, val):
+        if key.startswith('_') or hasattr(self, key):
+            return super(Checker, self).__setattr__(key, val)
+        if key == 'informers':
+            self._informers += val
+        else:
+            self._options[key] = val
+
+    def __getattr__(self, key):
+        if key.startswith('_') or hasattr(self, key):
+            return super(Checker, self).__getattr__(key)
+        if key == 'informers':
+            self._informers[key]
+        else:
+            self._options[key]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def update(self):
+        raise NotImplemented("")
+
+    def check(self):
+        value = self. self.get()
+        return True, None
+
+
+class Main(object):
+    _checkers = []
+    _default_plugins = [Checker, Informer]
+    _options = {
+        "name": "Alarm",
+        "message": "[$datetime] Alarm $name",
+        "sleep": 1
+    }
+
+    def __init__(self, **kwargs):
+        self._options.update(kwargs)
+        self.inject(self._options.get("plugins", []))
+
+    def _plugin(self, plugin):
+        def __plugin(self, **kwargs):
+            return plugin(self, **kwargs)
+        return types.MethodType(__plugin, self)
+
+    def inject(self, plugins):
+        for plugin in plugins + self._default_plugins:
+            setattr(self, plugin.__name__, self._plugin(plugin))
 
 
     def run(self):
-        while(True):
-            if self.shell:
-                res, value = self.shell_check()
+        while True:
+            for checker in self._checkers:
+                res, value = checker.check()
+
                 if not res:
-                    for informer in self.informers:
-                        try:
-                            informer.alarm(value=value)
-                        except Exception, ex:
-                            print "Can ot send info to informer:", ex 
+                    for informer in checker._informers:
+                        informer.alarm(value=value)
 
-            time.sleep(self.sleep)
-            
-
-    def __init__(self, config_file="./demo.ini"):
-        config = configparser.ConfigParser()
-        config.read(config_file)
-        self.sleep = 1
-        self.shell = None
-        self.error_message = "Service is Down or not response"
-        self.name = "Alarm"
-        self.informers = []
-        for section in config:
-            if section == "MAIN":
-                for key in config[section]:
-                    if key == "run":
-                        self.shell = shlex.split(config[section][key])
-                    if key == "re":
-                        self.re_pattern = re.compile(config[section][key])
-                    if key == "interval":
-                        self.sleep = int(config[section][key])
-                    if key == "name":
-                        self.name = config[section][key]
-                    if key == "message":
-                        self.error_message = config[section][key]
-            if section == "HIPCHAT":
-                self.informers += [plugins.hipster.Hipster(config[section])]
-            if section == "EMAIL":
-                self.informers += [plugins.hipster.Hipster(config[section])]
-
-        self.run()
+            time.sleep(self._options["sleep"])
 
 
-def usage():
-    print "Alarm 1.x"
-    print " -c      -- config file"
-
-def main():
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "hc:", ["help", "config="])
-    except getopt.GetoptError as err:
-        print(err)
-        usage()
-        sys.exit(2)
-
-    config_file = None
-
-    for o, a in opts:
-        if o in ("-c", "--config"):
-            config_file = a
-        elif o in ("-h", "--help"):
-            usage()
-            sys.exit()
-        else:
-            assert False, "unhandled option"
-    
-    alarmer = Alarmer()
-
-
-if __name__ == "__main__":
-    main()
+    def options(self, opts):
+        ret = self._options.copy()
+        ret.update(opts)
+        ret.update({"datetime": datetime.datetime.now()})
+        return ret
