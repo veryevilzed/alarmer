@@ -6,52 +6,63 @@ from base import Checker
 
 
 class Ram(Checker):
-    def __init__(self, main, **kwargs):
-        super(self.__class__, self).__init__(main, **kwargs)
-        self.validate = self._options.get("validate", lambda x: x.value < 80)
-        self.name = "RAM free"
+    _options = {
+        "name": "RAM free",
+        "validate": lambda x: x["value"] < 80
+    }
 
     def update(self):
-        self.value = psutil.virtual_memory().percent
+        value = psutil.virtual_memory().percent
+        super(self.__class__, self).update(value)
 
 
 class CPU(Checker):
-    def __init__(self, main, **kwargs):
-        super(self.__class__, self).__init__(main, **kwargs)
-        self.validate = self._options.get("validate", lambda x: x.value < 80)
-        self.name = "CPU load"
+    _options = {
+        "name": "CPU load",
+        "validate": lambda x: x["value"] < 80
+    }
 
     def update(self):
-        self.value = psutil.cpu_percent()
-        return self.value
+        value = psutil.cpu_percent()
+        super(self.__class__, self).update(value)
 
 
 class Disk(Checker):
-    def __init__(self, main, **kwargs):
-        super(self.__class__, self).__init__(main, **kwargs)
-        self.validate = self._options.get("validate", lambda x: x.value > 20)
-        self.name = "Disk free"
-        
+    _options = {
+        "name": "Disk free",
+        "validate": lambda x: x["value"] > 20
+    }
+
     def update(self):
         p = os.statvfs(self._options.get("target", "/") )
-        self.value = p.f_bfree / float(p.f_blocks)
+        value = p.f_bfree / float(p.f_blocks)
+        
 
 
 
 class Ping(Checker):
+    re = re.compile(r"(\d+\.\d+)% packet loss")
+    ping = local['ping']['-c5']
+    _options = {
+        "name": "PING",
+        "validate": lambda x: x["value"] < 21,
+        "target": "127.0.0.1",
+        "timeout": 2
+    }
+
     def __init__(self, main, **kwargs):
         super(self.__class__, self).__init__(main, **kwargs)
-        self.re = re.compile(r"(\d+\.\d+)% packet loss")
-        self.ping = local['ping']['-c5']
-        self.validate = self._options.get("validate", lambda x: x.value < 21)
-        self.name = "PING %s" % self._options.get("target")
+        self.opts["name"] = "PING %s" % self.opts.get("target")
 
     def update(self):
+        value = 100.0
+
         try:
-            text = self.ping(self._options.get("target"), timeout=self._options.get("timeout", 2))
+            text = self.ping(self.opts["target"], timeout=self.opts["timeout"])
             m = self.re.search(text)
-            if not m:
-                self.value = 100.0
-            self.value = float(m.group(1))
+            if m:
+                value = float(m.group(1))
         except:
-            self.value = 100.0
+            pass
+
+        super(self.__class__, self).update(value)

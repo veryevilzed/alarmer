@@ -15,14 +15,13 @@ class Console(Informer):
     }
 
     def __init__(self, main, **kwargs):
-        self._options.update(kwargs)
-        super(self.__class__, self).__init__(main, **self._options)
-        self.msg = Template(self.message)
+        super(self.__class__, self).__init__(main, **kwargs)
+        self.msg = Template(self.opts["message"])
 
     def alarm(self, **kwargs):
         if not super(self.__class__, self).alarm(**kwargs):
             return False
 
-        print self.msg_from, 'wrote', self.msg.safe_substitute(kwargs)
+        print self.msg.safe_substitute(self.opts)
         return True
 

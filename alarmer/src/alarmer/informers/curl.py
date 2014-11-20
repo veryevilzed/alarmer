@@ -7,6 +7,7 @@ from base import Informer
 
 class Curl(Informer):
     _options = {
+        "urls":     [],
         "method":   "GET",
         "body":     "",
         "headers":  [],
@@ -19,54 +20,38 @@ class Curl(Informer):
     }
 
     def __init__(self, main, **kwargs):
-        self._options.update(kwargs)
-        super(self.__class__, self).__init__(main, **self._options)
+        super(self.__class__, self).__init__(main, **kwargs)
 
-        if type(urls) in ("str", "unicode"):
-            self.urls = [self.urls]
+        if type(self.opts["urls"]) in ("str", "unicode"):
+            self.opts["urls"] = [self.opts["urls"]]
 
-        self.urls = map(self.urls, lambda url: Template(url))        
-
-
-    def _get(self, url, kwargs, params={}):
-        r = requests.get(url.safe_substitute(kwargs), params=params, auth=self.auth, allow_redirects=self.allow_redirects, timeout=self.timeout)
-        r.headers = self.headers
-        if r.status_code < 300:
-            return True
-        return False
-
-
-    def _post(self, url, kwargs, params={}):
-        r = requests.post(url.safe_substitute(kwargs), data=self.body.safe_substitute(kwargs), auth=self.auth, allow_redirects=self.allow_redirects, timeout=self.timeout)
-        r.headers = self.headers
-        if r.status_code < 300:
-            return True
-        return False
-
+        self.urls = map(lambda url: Template(url), self.opts["urls"])
 
     def alarm(self, **kwargs):
         if not super(self.__class__, self).alarm(**kwargs):
             return False
 
-        kwargs = main.options(kwargs)
-        params = {}
-        if self.params:
-            for name in self.params:
-                params = kwargs.get(name)
-
+        ok = []
         for url in self.urls:
-            for i in xrange(self.retry_count):
-                if self.method == "GET":
-                    if self._get(url, kwargs, params):
-                        break
+            req_kwargs = {
+                "method": self.opts["method"],
+                "url": url.safe_substitute(self.opts), 
+                "auth": self.opts["auth"], 
+                "allow_redirects": self.opts["allow_redirects"], 
+                "timeout": self.opts["timeout"]
+            }
+            if self.opts["method"] == "GET":
+                req_kwargs["params"] = self.opts["params"]
+            elif self.opts["method"] == "POST":
+                req_kwargs["data"] = self.opts["body"].safe_substitute(self.opts)
 
-                if self.method == "POST":
-                    if self._post(url, kwargs, params):
-                        break
+            uok = False
+            for i in xrange(self.opts["retry_count"]):
+                r = requests.request(**req_kwargs)
+                r.headers = self.opts["headers"]
+                if r.status_code < 300:
+                    uok = True
+                    break
+            ok.append(uok)
 
-        return True
-
-
-
-
-
+        return all(ok)
